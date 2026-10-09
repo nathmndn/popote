@@ -54,21 +54,14 @@
   }
   for(const [groupName,groupProducts] of groups){
    const group=document.createElement('section');group.className='courses-product-group';
-   const heading=document.createElement('div');heading.className='courses-group-heading';
-   const label=document.createElement('strong');label.textContent=groupName;
-   const count=document.createElement('span');count.textContent=groupProducts.filter(p=>active.has(p.id)).length+' / '+groupProducts.length+' sélectionné(s)';
-   heading.append(label,count);group.append(heading);
+   const heading=document.createElement('h4');heading.className='courses-group-heading-simple';heading.textContent=groupName;group.append(heading);
    const grid=document.createElement('div');grid.className='courses-product-grid';
    for(const p of groupProducts){
-    const tile=document.createElement('label');tile.className='courses-product-tile'+(active.has(p.id)?' is-selected':'');
-    const input=document.createElement('input');input.type='checkbox';input.checked=active.has(p.id);
-    input.setAttribute('aria-label','Ajouter '+p.nom+' à la liste');
-    input.onchange=()=>mutate(async()=>{
-     if(input.checked)check(await client.from('popote_liste_courses').upsert({produit_id:p.id,achete:false},{onConflict:'produit_id'}));
-     else check(await client.from('popote_liste_courses').delete().eq('produit_id',p.id));
-    });
-    const name=document.createElement('span');name.textContent=p.nom;
-    tile.append(input,name);grid.append(tile);
+    const selected=active.has(p.id);
+    const tile=document.createElement('button');tile.type='button';tile.className='courses-product-tile'+(selected?' is-selected':'');
+    tile.textContent=p.nom;tile.disabled=selected;tile.setAttribute('aria-label',selected?p.nom+' déjà ajouté': 'Ajouter '+p.nom);
+    tile.onclick=()=>mutate(async()=>check(await client.from('popote_liste_courses').upsert({produit_id:p.id,achete:false},{onConflict:'produit_id'})));
+    grid.append(tile);
    }
    group.append(grid);catalog.append(group);
   }
@@ -82,18 +75,18 @@
   if(!entries.length){const empty=document.createElement('div');empty.className='courses-empty-state';empty.textContent='🛒 Votre liste est vide. Sélectionnez des produits dans le catalogue pour commencer.';list.append(empty);}
   function renderEntry(p){
    const item=active.get(p.id),row=document.createElement('div');row.className='courses-item'+(item.achete?' courses-done':'');
-   const label=document.createElement('label');label.className='courses-item-check';
-   const input=document.createElement('input');input.type='checkbox';input.checked=item.achete;input.setAttribute('aria-label','Marquer '+p.nom+' comme acheté');
-   input.onchange=()=>mutate(async()=>{check(await client.from('popote_liste_courses').update({achete:input.checked,modifie_le:new Date().toISOString()}).eq('produit_id',p.id));});
    const text=document.createElement('span');text.className='courses-item-name';text.textContent=p.nom;
-   label.append(input,text);
-   const category=document.createElement('small');category.textContent=categories.find(c=>c.id===p.categorie_id)?.nom||'Autres';
-   const remove=document.createElement('button');remove.type='button';remove.className='muted courses-remove';remove.textContent='×';remove.title='Retirer '+p.nom;remove.setAttribute('aria-label','Retirer '+p.nom+' de la liste');
-   remove.onclick=()=>mutate(async()=>{check(await client.from('popote_liste_courses').delete().eq('produit_id',p.id));});
-   row.append(label,category,remove);return row;
+   const actions=document.createElement('div');actions.className='courses-item-actions';
+   const bought=document.createElement('button');bought.type='button';bought.className=item.achete?'courses-undo':'courses-mark-bought';
+   bought.textContent=item.achete?'↶ Annuler':'✓ Acheté';
+   bought.setAttribute('aria-label',(item.achete?'Annuler achat de ':'Marquer comme acheté : ')+p.nom);
+   bought.onclick=()=>mutate(async()=>check(await client.from('popote_liste_courses').update({achete:!item.achete,modifie_le:new Date().toISOString()}).eq('produit_id',p.id)));
+   const remove=document.createElement('button');remove.type='button';remove.className='courses-remove';remove.textContent='×';remove.title='Retirer '+p.nom;remove.setAttribute('aria-label','Retirer '+p.nom+' de la liste');
+   remove.onclick=()=>mutate(async()=>check(await client.from('popote_liste_courses').delete().eq('produit_id',p.id)));
+   actions.append(bought,remove);row.append(text,actions);return row;
   }
   if(remaining.length){const h=document.createElement('div');h.className='courses-list-heading';h.textContent='À ACHETER · '+remaining.length;list.append(h);for(const p of remaining)list.append(renderEntry(p));}
-  if(completed.length){const h=document.createElement('div');h.className='courses-list-heading courses-list-heading-done';h.textContent='ACHETÉS · '+completed.length;list.append(h);for(const p of completed)list.append(renderEntry(p));}
+  if(completed.length){const h=document.createElement('div');h.className='courses-list-heading courses-list-heading-done';h.textContent='DÉJÀ ACHETÉS · '+completed.length;list.append(h);for(const p of completed)list.append(renderEntry(p));}
 
  }
  $('coursesSearch').addEventListener('input',render);
