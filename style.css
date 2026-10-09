@@ -200,3 +200,7 @@ html{scroll-behavior:smooth;scroll-padding-top:20px}body{font-family:Inter,ui-sa
 .courses-panel .courses-title-row .courses-mini-icon{display:none}
 @media(max-width:1080px){.courses-panel .courses-layout{grid-template-columns:1fr}}
 @media(max-width:700px){.courses-panel{padding:15px!important}.courses-panel .courses-column{padding:14px}.courses-panel .courses-product-grid{gap:8px}.courses-panel .courses-product-tile{min-height:49px;padding:12px 15px;font-size:14px}.courses-panel .courses-item{flex-wrap:nowrap}.courses-panel .courses-item-actions{gap:5px}.courses-panel .courses-mark-bought,.courses-panel .courses-undo{min-height:44px;padding:8px 10px}.courses-panel .courses-remove{min-width:36px;min-height:44px}.courses-panel .courses-add-form{grid-template-columns:1fr}}
+
+/* Retour visible sous le formulaire d'ajout */
+.courses-panel .courses-form-feedback{grid-column:1/-1;display:block;margin:3px 0 0;padding:10px 12px;border-radius:9px;background:var(--surface-alt);color:var(--text);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.courses-panel #coursesAddProduct button:disabled{opacity:.65;cursor:wait}

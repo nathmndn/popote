@@ -3,7 +3,7 @@
  const $=id=>document.getElementById(id);
  const section=$('coursesSection');if(!section)return;
  let client=null,categories=[],products=[],items=[],busy=false,loading=false;
- const status=msg=>{$('coursesStatus').textContent=msg;};
+ const status=msg=>{const n=$('coursesStatus');if(n)n.textContent=msg;const f=$('coursesFormFeedback');if(f)f.textContent=msg;};
  const escapeText=(node,value)=>{node.textContent=value;return node;};
  const option=(value,label)=>{const o=document.createElement('option');o.value=value;o.textContent=label;return o;};
  const ordered=()=>[...products].sort((a,b)=>{
@@ -28,11 +28,11 @@
   finally{loading=false;}
  }
  async function mutate(action){
-  if(!client){status('Connectez-vous pour modifier le catalogue.');return false;}
+  if(!client){status('Connexion Supabase absente : déconnectez-vous puis reconnectez-vous.');return false;}
   if(busy||loading){status('Synchronisation en cours : réessayez dans un instant.');return false;}
   busy=true;section.classList.add('courses-busy');status('Enregistrement sur Supabase…');
   try{await action();status('✓ Modification enregistrée pour tous les responsables.');}
-  catch(e){status('Erreur : '+e.message);}
+  catch(e){status('Erreur Supabase : '+(e?.message||String(e))+' (code : '+(e?.code||'inconnu')+').');console.error('Popote courses :',e);}
   finally{busy=false;section.classList.remove('courses-busy');await load(true);}
  }
  const check=r=>{if(r.error)throw r.error;return r;};
@@ -96,17 +96,37 @@
  $('coursesAddCategory').onsubmit=e=>{e.preventDefault();const name=$('coursesNewCategory').value.trim();if(!name)return;
   mutate(async()=>{check(await client.from('popote_categories').insert({nom:name}));$('coursesNewCategory').value='';});
  };
- $('coursesAddProduct').onsubmit=e=>{
-  e.preventDefault();
-  const name=$('coursesNewProduct').value.trim();
-  const cat=$('coursesCategory').value;
-  if(!name){status('Saisissez le nom du produit.');$('coursesNewProduct').focus();return;}
-  if(!cat){status('Créez ou sélectionnez d’abord une catégorie.');$('coursesCategory').focus();return;}
-  void mutate(async()=>{
-   check(await client.from('popote_produits').insert({nom,categorie_id:cat}));
-   $('coursesNewProduct').value='';
+  const productForm=$('coursesAddProduct');
+  const productButton=productForm.querySelector('button[type="submit"]');
+  productForm.addEventListener('submit',async e=>{
+   e.preventDefault();
+   const name=$('coursesNewProduct').value.trim();
+   const cat=$('coursesCategory').value;
+   if(!name){status('Saisissez le nom du produit.');$('coursesNewProduct').focus();return;}
+   if(!cat){status('Sélectionnez une catégorie ou créez-en une.');$('coursesCategory').focus();return;}
+   if(!client){status('Connexion non initialisée. Déconnectez-vous puis reconnectez-vous.');return;}
+   if(busy||loading){status('Synchronisation en cours. Réessayez dans quelques secondes.');return;}
+   productButton.disabled=true;
+   productButton.textContent='Enregistrement…';
+   try{
+    busy=true;
+    status('Enregistrement de « '+name+' »…');
+    const {data,error}=await client.from('popote_produits').insert({nom:name,categorie_id:cat}).select('id,nom,categorie_id');
+    if(error)throw error;
+    if(!data?.length)throw new Error('Insertion non confirmée : vérifiez les autorisations de la table popote_produits.');
+    products=[...products,...data];
+    $('coursesNewProduct').value='';
+    render();
+    status('✓ « '+name+' » ajouté au catalogue. Cliquez sur son bloc pour l’ajouter aux courses.');
+   }catch(err){
+    const message='Échec de l’ajout : '+(err?.message||String(err))+(err?.code?' [code '+err.code+']':'');
+    status(message);console.error('Ajout produit Popote :',err);
+   }finally{
+    busy=false;
+    productButton.disabled=false;
+    productButton.textContent='+ Ajouter le produit';
+   }
   });
- };
  $('coursesReset').onclick=()=>{if(!items.length)return;if(!confirm('Vider la liste de courses en cours ? Les produits et catégories du catalogue seront conservés.'))return;
   mutate(async()=>check(await client.from('popote_liste_courses').delete().in('produit_id',items.map(i=>i.produit_id))));
  };
