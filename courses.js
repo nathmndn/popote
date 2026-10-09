@@ -23,12 +23,13 @@
    ]);
    for(const r of [c,p,l])if(r.error)throw r.error;
    categories=c.data||[];products=p.data||[];items=l.data||[];render();
-   status('✓ Liste partagée synchronisée.');
+   if(!quiet)status('✓ Liste partagée synchronisée.');
   }catch(e){status('Liste de courses indisponible : '+e.message);}
   finally{loading=false;}
  }
  async function mutate(action){
-  if(!client||busy||loading)return;
+  if(!client){status('Connectez-vous pour modifier le catalogue.');return false;}
+  if(busy||loading){status('Synchronisation en cours : réessayez dans un instant.');return false;}
   busy=true;section.classList.add('courses-busy');status('Enregistrement sur Supabase…');
   try{await action();status('✓ Modification enregistrée pour tous les responsables.');}
   catch(e){status('Erreur : '+e.message);}
@@ -95,10 +96,14 @@
  $('coursesAddCategory').onsubmit=e=>{e.preventDefault();const name=$('coursesNewCategory').value.trim();if(!name)return;
   mutate(async()=>{check(await client.from('popote_categories').insert({nom:name}));$('coursesNewCategory').value='';});
  };
- $('coursesAddProduct').onsubmit=e=>{e.preventDefault();const name=$('coursesNewProduct').value.trim(),cat=$('coursesCategory').value;if(!name||!cat)return;
-  mutate(async()=>{
-   const r=check(await client.from('popote_produits').insert({nom,categorie_id:cat}).select('id').single());
-   check(await client.from('popote_liste_courses').insert({produit_id:r.data.id}));
+ $('coursesAddProduct').onsubmit=e=>{
+  e.preventDefault();
+  const name=$('coursesNewProduct').value.trim();
+  const cat=$('coursesCategory').value;
+  if(!name){status('Saisissez le nom du produit.');$('coursesNewProduct').focus();return;}
+  if(!cat){status('Créez ou sélectionnez d’abord une catégorie.');$('coursesCategory').focus();return;}
+  void mutate(async()=>{
+   check(await client.from('popote_produits').insert({nom,categorie_id:cat}));
    $('coursesNewProduct').value='';
   });
  };
