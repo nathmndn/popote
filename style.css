@@ -91,3 +91,6 @@ td input[type=checkbox]{accent-color:var(--taupe)}
  .cards { grid-template-columns:1fr; }
  .responsive-table tbody td { grid-template-columns:minmax(85px, 40%) minmax(0, 1fr); gap:7px; }
 }
+
+/* V8 : écran de connexion */
+.login-screen{min-height:100vh;display:grid;place-items:center;background:#f3eee7;padding:24px;color:#463b35}.login-card{width:min(100%,420px);display:flex;flex-direction:column;gap:12px;background:#fffcf7;padding:32px;border-radius:18px;box-shadow:0 15px 40px #463b3522}.login-card h1,.login-card p{margin:0;text-align:center}.login-card label{font-weight:700;margin-top:8px}.login-card input{padding:12px;border:1px solid #b7a99b;border-radius:8px;background:white;color:#302721}.login-card button{padding:12px;background:#756457;color:white;border:0;border-radius:8px;cursor:pointer}.login-icon{text-align:center;font-size:36px}.login-card small{text-align:center;color:#756457}.login-card #loginError{color:#9b2929;min-height:1.5em}.login-screen[hidden],#appShell[hidden]{display:none!important}
