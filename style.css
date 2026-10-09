@@ -117,3 +117,49 @@ html{scroll-behavior:smooth;scroll-padding-top:20px}body{font-family:Inter,ui-sa
 .courses-add-form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}.courses-add-form h4{grid-column:1/-1}.courses-category-form{grid-template-columns:1fr auto}.courses-add-form button{min-height:44px}
 .courses-current-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}.courses-current-heading span{color:var(--muted-text);font-size:12px}.courses-current{display:grid;gap:9px;min-height:110px}.courses-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:11px}.courses-item>span:nth-child(2){flex:1;font-weight:650;overflow-wrap:anywhere}.courses-item.courses-done>span:nth-child(2){text-decoration:line-through;color:var(--muted-text)}.courses-state{font-size:12px;color:var(--muted-text)}.courses-remove{padding:7px 10px;font-size:12px}.courses-reset{width:100%;margin-top:14px}.courses-empty{padding:18px;color:var(--muted-text);font-size:13px;margin:0}.courses-busy button,.courses-busy input,.courses-busy select{pointer-events:none;opacity:.6}
 @media(max-width:1050px){.courses-layout{grid-template-columns:1fr}}@media(max-width:700px){.courses-column{padding:12px}.courses-filters{grid-template-columns:1fr}.courses-add-form,.courses-category-form{grid-template-columns:1fr}.courses-item{flex-wrap:wrap}.courses-item small{display:none}.courses-item .courses-remove{margin-left:auto}.courses-current-heading{align-items:start}}
+
+/* Ergonomie liste de courses : catalogue compact, sections et checklist lisible */
+.courses-panel .courses-layout{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:14px;align-items:start}
+.courses-panel .courses-column{padding:17px;border-radius:16px}
+.courses-title-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.courses-panel h3{margin:0 0 3px;font-size:16px}
+.courses-subtitle{margin:0 0 13px!important;font-size:12px;color:var(--muted-text)}
+.courses-mini-icon{font-size:21px;color:var(--taupe)}
+.courses-panel .courses-filters{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:12px}
+.courses-panel .courses-filters input,.courses-panel .courses-filters select{padding:9px;font-size:13px}
+.courses-panel .courses-catalogue{max-height:365px;padding:11px;display:grid;gap:13px;border-radius:12px}
+.courses-product-group{min-width:0}
+.courses-group-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.courses-group-heading strong{font-size:12px;color:var(--text)}
+.courses-group-heading span{font-size:10px;color:var(--muted-text);text-align:right}
+.courses-product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:7px}
+.courses-product-tile{display:flex;align-items:center;gap:8px;min-height:44px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.courses-product-tile:hover{background:var(--surface-alt)}
+.courses-product-tile.is-selected{background:var(--highlight);border-color:var(--taupe)}
+.courses-product-tile input{flex:none;width:18px;height:18px;min-width:18px;accent-color:var(--taupe);margin:0}
+.courses-product-tile span{min-width:0;overflow-wrap:anywhere}
+.courses-catalogue-count{font-size:11px;color:var(--muted-text);margin:7px 0 0!important}
+.courses-manage{margin-top:15px;border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.courses-manage>summary{cursor:pointer;padding:12px 13px;background:var(--surface-alt);font-size:12px;font-weight:700;list-style-position:inside}
+.courses-manage-body{padding:0 13px 13px}
+.courses-panel .courses-add-form{margin-top:10px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+.courses-panel .courses-add-form button{grid-column:1/-1}
+.courses-panel .courses-category-form{grid-template-columns:minmax(0,1fr) auto}
+.courses-panel .courses-category-form button{grid-column:auto}
+.courses-panel .courses-current-heading{margin-bottom:10px;align-items:flex-start}
+.courses-panel #coursesCount{white-space:normal;text-align:right;max-width:125px;font-weight:700}
+.courses-panel .courses-current{gap:6px;min-height:100px}
+.courses-list-heading{font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--muted-text);margin:9px 0 2px}
+.courses-list-heading-done{margin-top:15px}
+.courses-panel .courses-item{display:flex;flex-wrap:nowrap;gap:8px;padding:9px 10px;min-height:47px;border-radius:10px}
+.courses-item-check{display:flex;flex:1;min-width:0;align-items:center;gap:9px;cursor:pointer;font-size:13px}
+.courses-item-check input{margin:0;flex:none}
+.courses-item-name{font-weight:650;overflow-wrap:anywhere}
+.courses-panel .courses-item small{font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.courses-panel .courses-item.courses-done{opacity:.68}
+.courses-panel .courses-item.courses-done .courses-item-name{text-decoration:line-through;color:var(--muted-text)}
+.courses-panel .courses-remove{flex:none;border:0;background:transparent;color:var(--muted-text);font-size:22px;font-weight:400;min-height:30px;min-width:30px;padding:0 5px}
+.courses-empty-state{padding:25px 15px;text-align:center;font-size:13px;color:var(--muted-text);border:1px dashed var(--border);border-radius:12px}
+.courses-panel .courses-reset{margin-top:14px}
+@media(max-width:1100px){.courses-panel .courses-layout{grid-template-columns:1fr}}
+@media(max-width:700px){.courses-panel .courses-filters{grid-template-columns:1fr 1fr}.courses-panel .courses-filters label:first-child{grid-column:1/-1}.courses-panel .courses-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.courses-panel .courses-column{padding:12px}.courses-panel .courses-item small{display:none}.courses-panel .courses-category-form{grid-template-columns:1fr}.courses-panel .courses-category-form button{grid-column:1}.courses-panel .courses-add-form{grid-template-columns:1fr}}
