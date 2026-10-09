@@ -100,9 +100,9 @@
   const productButton=productForm.querySelector('button[type="submit"]');
   productForm.addEventListener('submit',async e=>{
    e.preventDefault();
-   const name=$('coursesNewProduct').value.trim();
+   const productName=$('coursesNewProduct').value.trim();
    const cat=$('coursesCategory').value;
-   if(!name){status('Saisissez le nom du produit.');$('coursesNewProduct').focus();return;}
+   if(!productName){status('Saisissez le nom du produit.');$('coursesNewProduct').focus();return;}
    if(!cat){status('Sélectionnez une catégorie ou créez-en une.');$('coursesCategory').focus();return;}
    if(!client){status('Connexion non initialisée. Déconnectez-vous puis reconnectez-vous.');return;}
    if(busy||loading){status('Synchronisation en cours. Réessayez dans quelques secondes.');return;}
@@ -110,14 +110,14 @@
    productButton.textContent='Enregistrement…';
    try{
     busy=true;
-    status('Enregistrement de « '+name+' »…');
-    const {data,error}=await client.from('popote_produits').insert({nom:name,categorie_id:cat}).select('id,nom,categorie_id');
+    status('Enregistrement de « '+productName+' »…');
+    const {data,error}=await client.from('popote_produits').insert({nom:productName,categorie_id:cat}).select('id,nom,categorie_id');
     if(error)throw error;
     if(!data?.length)throw new Error('Insertion non confirmée : vérifiez les autorisations de la table popote_produits.');
     products=[...products,...data];
     $('coursesNewProduct').value='';
     render();
-    status('✓ « '+name+' » ajouté au catalogue. Cliquez sur son bloc pour l’ajouter aux courses.');
+    status('✓ « '+productName+' » ajouté au catalogue. Cliquez sur son bloc pour l’ajouter aux courses.');
    }catch(err){
     const message='Échec de l’ajout : '+(err?.message||String(err))+(err?.code?' [code '+err.code+']':'');
     status(message);console.error('Ajout produit Popote :',err);
