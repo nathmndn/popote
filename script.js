@@ -28,7 +28,7 @@ const originalLocalPeople = structuredClone(data.people);
 let personnelReady = false;
 let personnelClient = null;
 function personnelStatus(message){const node=$("personnelSyncStatus");if(node)node.textContent=message;}
-function requirePersonnelReady(){if(!personnelReady){alert("La liste des personnels n’est pas synchronisée. Réessaie après la connexion.");return false;}return true;}
+function requirePersonnelReady(){if(!personnelReady||!financeReady||financeBusy){alert("La liste des personnels n’est pas synchronisée. Réessaie après la connexion.");return false;}return true;}
 // Migration sans modifier les soldes : les anciens encaissements sont résumés
 // dans une ligne de reprise. Les nouvelles opérations sont détaillées.
 if(!Array.isArray(data.ledger)) data.ledger=[];
@@ -42,7 +42,49 @@ function recordMovement(type,label,delta,month=data.month){
 
 // Migration conservatrice : la version 2 reste intacte, la version 3 a son propre stockage.
 if(!localStorage.getItem(KEY)&&localStorage.getItem(V2_KEY))localStorage.setItem(KEY,JSON.stringify(data));
-function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){alert("Impossible d'enregistrer les données localement. Fais une sauvegarde JSON.");}}
+let financeReady=false, financeRevision=null, financeBusy=false, financeClient=null;
+let lastCommitted=null;
+const FINANCE_FIELDS=["month","entries","archives","opening","expenses","receiptsTotal","resetAfterArchive","ledger","ledgerBaseline"];
+function financePayload(){return Object.fromEntries(FINANCE_FIELDS.map(k=>[k,structuredClone(data[k])]));}
+function applyFinance(payload){for(const k of FINANCE_FIELDS)data[k]=structuredClone(payload[k]??defaultData()[k]);}
+function financeStatus(message){const n=$("financeSyncStatus");if(n)n.textContent=message;}
+function financeGate(){if(!financeReady||financeBusy){alert("Caisse en cours de synchronisation. Attends la confirmation avant de modifier les montants.");return false;}return true;}
+async function refreshFinance(){
+ if(!financeClient)return;
+ financeBusy=true;financeReady=false;financeStatus("Chargement de la caisse partagée…");
+ try{
+  const {data:rows,error}=await financeClient.rpc("lire_popote_finances");if(error)throw error;
+  if(!rows?.length)throw new Error("Aucune caisse distante trouvée.");
+  financeRevision=Number(rows[0].revision);applyFinance(rows[0].contenu);
+  lastCommitted=financePayload();financeReady=true;
+  financeStatus("✓ Caisse partagée synchronisée — version "+financeRevision);
+  saveLocal();render();
+ }catch(err){financeStatus("Caisse indisponible : "+err.message);alert("Impossible de charger la caisse Supabase : "+err.message);}
+ finally{financeBusy=false;}
+}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){console.error(e);}}
+async function persistFinance(){
+ if(!financeReady||financeBusy)return;
+ financeBusy=true;financeStatus("Enregistrement de la caisse…");
+ const payload=financePayload();
+ try{
+  const {data:newRevision,error}=await financeClient.rpc("enregistrer_popote_finances",{revision_attendue:financeRevision,nouveau_contenu:payload});
+  if(error)throw error;
+  financeRevision=Number(newRevision);lastCommitted=payload;saveLocal();
+  financeStatus("✓ Caisse enregistrée — version "+financeRevision);
+ }catch(err){
+  alert("Modification NON enregistrée. La caisse sera rechargée depuis Supabase. Vérifie les montants puis recommence si nécessaire. Détail : "+err.message);
+  financeReady=false;
+  await refreshFinance();
+ }finally{financeBusy=false;}
+}
+function save(){saveLocal();if(financeReady)void persistFinance();}
+// Bloque les écritures financières avant la synchronisation ou pendant un enregistrement.
+const financeSelectors=['#month','#archive','#reset','#openingForm','#expenseForm','#rows input','#expenseList button'];
+document.addEventListener('change',e=>{if(e.target.matches('#month,#rows input')&&!financeGate()){e.stopImmediatePropagation();render();}},true);
+document.addEventListener('click',e=>{if(e.target.closest('#archive,#reset,#expenseList button')&&!financeGate()){e.stopImmediatePropagation();e.preventDefault();}},true);
+document.addEventListener('submit',e=>{if(e.target.matches('#openingForm,#expenseForm')&&!financeGate()){e.stopImmediatePropagation();e.preventDefault();}},true);
+
 function cleanMonth(s){return /^\d{4}-(0[1-9]|1[0-2])$/.test(s);}
 function safeEntry(pid){if(!data.entries[pid])data.entries[pid]=blank();return data.entries[pid];}
 function latestArchivedBalance(pid,month){const previous=data.archives.filter(a=>a.month<month).sort((a,b)=>b.month.localeCompare(a.month))[0];return previous?.rows.find(r=>r.id===pid)?.balance??0;}
@@ -122,7 +164,7 @@ function exportLedger(){
 $("ledgerExport").onclick=exportLedger;
 
 for(const rank of RANKS){const option=el("option",rank);option.value=rank;$("rank").append(option);}
-$("addForm").onsubmit=async e=>{e.preventDefault();if(!requirePersonnelReady())return;const last=$("last").value.trim(),first=$("first").value.trim(),rank=$("rank").value;if(!last||!first)return;if(data.archives.some(a=>a.month===data.month)&&!data.resetAfterArchive){alert("Réinitialise le tableau archivé avant d'ajouter un personnel.");return;}const person={id:id(),last,first,rank};try{const {error}=await personnelClient.from("personnels").insert({id:person.id,nom:last,prenom:first,grade:rank,actif:true});if(error)throw error;data.people.push(person);save();e.target.reset();render();}catch(err){alert("Ajout non enregistré sur Supabase : "+err.message);}};
+$("addForm").onsubmit=async e=>{e.preventDefault();if(!requirePersonnelReady())return;const last=$("last").value.trim(),first=$("first").value.trim(),rank=$("rank").value;if(!last||!first)return;if(data.archives.some(a=>a.month===data.month)&&!data.resetAfterArchive){alert("Réinitialise le tableau archivé avant d'ajouter un personnel.");return;}const person={id:id(),last,first,rank};try{const {error}=await personnelClient.from("personnels").insert({id:person.id,nom:last,prenom:first,grade:rank,actif:true});if(error)throw error;data.people.push(person);saveLocal();e.target.reset();render();}catch(err){alert("Ajout non enregistré sur Supabase : "+err.message);}};
 $("month").onchange=e=>{const value=e.target.value;if(!cleanMonth(value)){alert("Choisis un mois valide.");render();return;}if(data.archives.some(a=>a.month===value)){alert("Ce mois est déjà archivé. Son historique est consultable ci-dessous, mais tu ne peux pas réutiliser ce mois pour un nouveau tableau.");render();return;}if(data.month&&data.month!==value&&Object.values(data.entries).some(e=>e.coffee||e.count||e.paid)){alert("Réinitialise d'abord le tableau actif avant de changer de mois. Archive-le auparavant si tu souhaites conserver les détails.");render();return;}data.month=value;data.resetAfterArchive=false;save();render();};
 $("archive").onclick=()=>{if(!cleanMonth(data.month)){alert("Choisis d'abord le mois de travail.");return;}if(data.archives.some(a=>a.month===data.month)){alert("Ce mois est déjà archivé. Aucun doublon n'a été créé.");return;}const rows=currentRows();if(!rows.length){alert("Ajoute au moins un personnel avant d'archiver.");return;}const paid=rows.reduce((s,r)=>s+r.paid,0);if(!confirm(`ATTENTION : en archivant le présent tableau, il faudra penser à sélectionner le mois suivant !\n\nArchiver définitivement ${data.month} ? Les ${money(paid)} sont déjà comptabilisés dans la caisse. Aucun encaissement supplémentaire ne sera créé. Le tableau ne sera PAS réinitialisé automatiquement.`))return;data.archives.push({id:id(),month:data.month,rows:structuredClone(rows)});data.resetAfterArchive=false;save();render();alert("Archive enregistrée. Tu peux maintenant réinitialiser le tableau, puis choisir manuellement le nouveau mois.");};
 $("reset").onclick=()=>{const active=Object.values(data.entries).some(e=>e.coffee||e.count||e.paid);if(!active&&!data.archives.some(a=>a.month===data.month)){alert("Le tableau est déjà vide de consommations et paiements.");return;}if(!data.archives.some(a=>a.month===data.month)){if(!confirm("ATTENTION : le mois actif n'est pas archivé. Une remise à zéro supprimera définitivement les consommations et paiements non archivés. Continuer ?"))return;}else if(!confirm("Remettre à zéro le café, les consommations et les paiements du tableau actif ? Les personnes, les archives et la caisse resteront inchangées."))return;data.entries={};data.resetAfterArchive=true;save();render();if(data.archives.some(a=>a.month===data.month))alert("Le tableau est déverrouillé. Sélectionne maintenant un nouveau mois de travail avant de saisir des consommations ou paiements : le mois archivé ne peut pas être archivé une seconde fois.");};
@@ -140,10 +182,11 @@ $("csv").onclick=()=>{const header=["Mois","Grade","Nom","Prénom","Cotisation e
 if(!localStorage.getItem(KEY)&&!localStorage.getItem(V2_KEY)&&localStorage.getItem(OLD_KEY)){$("addForm").insertAdjacentElement("beforebegin",Object.assign(el("p","Une ancienne version de la popote a été détectée dans ce navigateur. Ses données sont conservées séparément et ne sont pas importées automatiquement."),{className:"warning"}));}
 render();
 
-// Conserve le point de reprise historique pour les prochains chargements.
-save();
+// La caisse distante est la source de vérité ; aucune donnée locale importée automatiquement.
 
 // Préférence d'affichage indépendante des données comptables.
+$("financeRefresh").onclick=()=>{if(financeBusy)return;refreshFinance();};
+window.addEventListener("focus",()=>{if(financeReady&&!financeBusy)void refreshFinance();});
 const THEME_KEY="popote-brigade-theme";
 const themeButton=$("themeToggle");
 function applyTheme(theme){
@@ -164,19 +207,20 @@ themeButton.addEventListener("click",()=>{
 
 // V8 phase 2 : liste des personnels partagée. Les données financières restent LOCALES.
 async function startPersonnelSync(client){
- personnelClient=client;personnelReady=false;personnelStatus("Chargement des personnels Supabase…");
+ personnelClient=client;financeClient=client;financeReady=false;personnelReady=false;personnelStatus("Chargement des personnels Supabase…");
  try{
   const {data:records,error}=await client.from("personnels").select("id,nom,prenom,grade,actif").eq("actif",true).order("nom");
   if(error)throw error;
   data.people=records.map(r=>({id:r.id,last:r.nom,first:r.prenom,rank:r.grade}));
-  personnelReady=true;save();render();
-  personnelStatus("✓ Personnels synchronisés avec Supabase ("+records.length+"). Les paiements et archives restent locaux.");
+  personnelReady=true;saveLocal();render();
+  await refreshFinance();
+  personnelStatus("✓ Personnels synchronisés avec Supabase ("+records.length+"). La caisse est également partagée.");
   const importButton=$("importLocalPeople");
   if(importButton)importButton.hidden=originalLocalPeople.length===0;
  }catch(err){personnelStatus("Échec de synchronisation : "+err.message+". Ajout et suppression bloqués.");}
 }
 window.addEventListener("popote:authenticated",e=>{if(e.detail?.client)startPersonnelSync(e.detail.client);});
-window.addEventListener("popote:signed-out",()=>{personnelReady=false;personnelClient=null;personnelStatus("Connecte-toi pour synchroniser les personnels.");});
+window.addEventListener("popote:signed-out",()=>{financeReady=false;financeClient=null;personnelReady=false;personnelClient=null;personnelStatus("Connecte-toi pour synchroniser les personnels.");});
 $("importLocalPeople").onclick=async()=>{
  if(!requirePersonnelReady())return;
  const missing=originalLocalPeople.filter(p=>!data.people.some(x=>x.id===p.id));
