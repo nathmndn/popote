@@ -24,6 +24,11 @@ function load(){try{
 }catch(e){alert("Données locales illisibles. Aucune sauvegarde automatique n'a été effectuée.");}
 return defaultData();}
 let data=load();
+const originalLocalPeople = structuredClone(data.people);
+let personnelReady = false;
+let personnelClient = null;
+function personnelStatus(message){const node=$("personnelSyncStatus");if(node)node.textContent=message;}
+function requirePersonnelReady(){if(!personnelReady){alert("La liste des personnels n’est pas synchronisée. Réessaie après la connexion.");return false;}return true;}
 // Migration sans modifier les soldes : les anciens encaissements sont résumés
 // dans une ligne de reprise. Les nouvelles opérations sont détaillées.
 if(!Array.isArray(data.ledger)) data.ledger=[];
@@ -62,7 +67,7 @@ if(delta!==0){
  recordMovement("Paiement",`${r.rank} ${r.first} ${r.last} — ${money(oldPaid)} → ${money(newPaid)}`,delta);
 }
 safeEntry(r.id).paid=newPaid;save();render();};p.append(paid);tr.append(p);
-tr.append(cell(money(r.balance)));const action=el("td"),remove=el("button","Supprimer");remove.type="button";remove.className="danger";remove.disabled=locked;remove.onclick=()=>{if(!confirm(`Supprimer ${r.first} ${r.last} du tableau actif ? Ses données déjà archivées resteront conservées.`))return;data.people=data.people.filter(x=>x.id!==r.id);delete data.entries[r.id];save();render();};action.append(remove);tr.append(action);body.append(tr);}
+tr.append(cell(money(r.balance)));const action=el("td"),remove=el("button","Supprimer");remove.type="button";remove.className="danger";remove.disabled=locked;remove.onclick=async()=>{if(!requirePersonnelReady())return;if(!confirm(`Supprimer ${r.first} ${r.last} du tableau actif ? Ses données déjà archivées resteront conservées.`))return;try{const {error}=await personnelClient.from("personnels").delete().eq("id",r.id);if(error)throw error;data.people=data.people.filter(x=>x.id!==r.id);delete data.entries[r.id];save();render();}catch(err){alert("Suppression non enregistrée sur Supabase : "+err.message);}};action.append(remove);tr.append(action);body.append(tr);}
 renderCash();renderArchives();renderLedger();enhanceMobileTables();}
 // Mise en page responsive uniquement : aucune donnée comptable n'est modifiée.
 // Les en-têtes du tableau deviennent les libellés de chaque champ sur téléphone.
@@ -117,7 +122,7 @@ function exportLedger(){
 $("ledgerExport").onclick=exportLedger;
 
 for(const rank of RANKS){const option=el("option",rank);option.value=rank;$("rank").append(option);}
-$("addForm").onsubmit=e=>{e.preventDefault();const last=$("last").value.trim(),first=$("first").value.trim(),rank=$("rank").value;if(!last||!first)return;if(data.archives.some(a=>a.month===data.month)&&!data.resetAfterArchive){alert("Réinitialise le tableau archivé avant d'ajouter un personnel.");return;}data.people.push({id:id(),last,first,rank});save();e.target.reset();render();};
+$("addForm").onsubmit=async e=>{e.preventDefault();if(!requirePersonnelReady())return;const last=$("last").value.trim(),first=$("first").value.trim(),rank=$("rank").value;if(!last||!first)return;if(data.archives.some(a=>a.month===data.month)&&!data.resetAfterArchive){alert("Réinitialise le tableau archivé avant d'ajouter un personnel.");return;}const person={id:id(),last,first,rank};try{const {error}=await personnelClient.from("personnels").insert({id:person.id,nom:last,prenom:first,grade:rank,actif:true});if(error)throw error;data.people.push(person);save();e.target.reset();render();}catch(err){alert("Ajout non enregistré sur Supabase : "+err.message);}};
 $("month").onchange=e=>{const value=e.target.value;if(!cleanMonth(value)){alert("Choisis un mois valide.");render();return;}if(data.archives.some(a=>a.month===value)){alert("Ce mois est déjà archivé. Son historique est consultable ci-dessous, mais tu ne peux pas réutiliser ce mois pour un nouveau tableau.");render();return;}if(data.month&&data.month!==value&&Object.values(data.entries).some(e=>e.coffee||e.count||e.paid)){alert("Réinitialise d'abord le tableau actif avant de changer de mois. Archive-le auparavant si tu souhaites conserver les détails.");render();return;}data.month=value;data.resetAfterArchive=false;save();render();};
 $("archive").onclick=()=>{if(!cleanMonth(data.month)){alert("Choisis d'abord le mois de travail.");return;}if(data.archives.some(a=>a.month===data.month)){alert("Ce mois est déjà archivé. Aucun doublon n'a été créé.");return;}const rows=currentRows();if(!rows.length){alert("Ajoute au moins un personnel avant d'archiver.");return;}const paid=rows.reduce((s,r)=>s+r.paid,0);if(!confirm(`ATTENTION : en archivant le présent tableau, il faudra penser à sélectionner le mois suivant !\n\nArchiver définitivement ${data.month} ? Les ${money(paid)} sont déjà comptabilisés dans la caisse. Aucun encaissement supplémentaire ne sera créé. Le tableau ne sera PAS réinitialisé automatiquement.`))return;data.archives.push({id:id(),month:data.month,rows:structuredClone(rows)});data.resetAfterArchive=false;save();render();alert("Archive enregistrée. Tu peux maintenant réinitialiser le tableau, puis choisir manuellement le nouveau mois.");};
 $("reset").onclick=()=>{const active=Object.values(data.entries).some(e=>e.coffee||e.count||e.paid);if(!active&&!data.archives.some(a=>a.month===data.month)){alert("Le tableau est déjà vide de consommations et paiements.");return;}if(!data.archives.some(a=>a.month===data.month)){if(!confirm("ATTENTION : le mois actif n'est pas archivé. Une remise à zéro supprimera définitivement les consommations et paiements non archivés. Continuer ?"))return;}else if(!confirm("Remettre à zéro le café, les consommations et les paiements du tableau actif ? Les personnes, les archives et la caisse resteront inchangées."))return;data.entries={};data.resetAfterArchive=true;save();render();if(data.archives.some(a=>a.month===data.month))alert("Le tableau est déverrouillé. Sélectionne maintenant un nouveau mois de travail avant de saisir des consommations ou paiements : le mois archivé ne peut pas être archivé une seconde fois.");};
@@ -156,3 +161,30 @@ themeButton.addEventListener("click",()=>{
   applyTheme(next);
   try {localStorage.setItem(THEME_KEY,next);}catch(e){}
 });
+
+// V8 phase 2 : liste des personnels partagée. Les données financières restent LOCALES.
+async function startPersonnelSync(client){
+ personnelClient=client;personnelReady=false;personnelStatus("Chargement des personnels Supabase…");
+ try{
+  const {data:records,error}=await client.from("personnels").select("id,nom,prenom,grade,actif").eq("actif",true).order("nom");
+  if(error)throw error;
+  data.people=records.map(r=>({id:r.id,last:r.nom,first:r.prenom,rank:r.grade}));
+  personnelReady=true;save();render();
+  personnelStatus("✓ Personnels synchronisés avec Supabase ("+records.length+"). Les paiements et archives restent locaux.");
+  const importButton=$("importLocalPeople");
+  if(importButton)importButton.hidden=originalLocalPeople.length===0;
+ }catch(err){personnelStatus("Échec de synchronisation : "+err.message+". Ajout et suppression bloqués.");}
+}
+window.addEventListener("popote:authenticated",e=>{if(e.detail?.client)startPersonnelSync(e.detail.client);});
+window.addEventListener("popote:signed-out",()=>{personnelReady=false;personnelClient=null;personnelStatus("Connecte-toi pour synchroniser les personnels.");});
+$("importLocalPeople").onclick=async()=>{
+ if(!requirePersonnelReady())return;
+ const missing=originalLocalPeople.filter(p=>!data.people.some(x=>x.id===p.id));
+ if(!missing.length){alert("Tous les personnels de cette sauvegarde sont déjà présents.");return;}
+ if(!confirm(`Importer ${missing.length} personnel(s) depuis CE navigateur vers Supabase ? Vérifie les doublons de noms avant de continuer. Les paiements et archives ne seront PAS importés.`))return;
+ const records=missing.map(p=>({id:p.id,nom:p.last,prenom:p.first,grade:p.rank,actif:true}));
+ const {error}=await personnelClient.from("personnels").upsert(records,{onConflict:"id"});
+ if(error){alert("Import interrompu : "+error.message);return;}
+ await startPersonnelSync(personnelClient);
+ alert("Import des personnels terminé. Les autres données restent locales.");
+};

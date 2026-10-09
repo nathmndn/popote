@@ -8,7 +8,7 @@
   function showSession(session) {
     $('loginScreen').hidden = !!session;
     $('appShell').hidden = !session;
-    if (session) $('loginPassword').value = '';
+    if (session) { $('loginPassword').value = ''; window.dispatchEvent(new CustomEvent('popote:authenticated',{detail:{client}})); } else {window.dispatchEvent(new Event('popote:signed-out'));}
   }
   document.addEventListener('DOMContentLoaded', async () => {
     if (!client) { $('loginError').textContent = 'Configurer config.js avec les valeurs publiques de Supabase.'; return; }
