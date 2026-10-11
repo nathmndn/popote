@@ -224,3 +224,71 @@ html{scroll-behavior:smooth;scroll-padding-top:20px}body{font-family:Inter,ui-sa
  .personnel-mobile .pm-remove{width:100%;margin-top:2px}
  .personnel-mobile .pm-counter{text-align:center;color:var(--muted-text);font-size:12px}
 }
+
+
+/* ==============================================================
+   POPOTE BRIGADE V11 — GLASS & CALM
+   Habillage CSS exclusivement : aucune logique métier modifiée.
+   ============================================================== */
+:root{
+ --page:#f5f0e9;--surface:rgba(255,253,248,.76);--surface-alt:rgba(239,230,217,.64);
+ --text:#3d352e;--muted-text:#75685d;--border:rgba(129,104,83,.20);
+ --taupe:#675448;--taupe-dark:#514237;--head:#51463e;--table-head:rgba(238,227,213,.72);
+ --shadow:0 14px 38px rgba(75,55,38,.075),0 2px 9px rgba(75,55,38,.045);
+ --glass-blur:blur(18px) saturate(125%);
+}
+:root[data-theme="dark"]{
+ --page:#211d1b;--surface:rgba(48,42,38,.78);--surface-alt:rgba(68,57,49,.72);
+ --text:#f3eae0;--muted-text:#d0bfb0;--border:rgba(230,206,181,.17);
+ --taupe:#c3a68d;--taupe-dark:#d4b69d;--head:#26211f;--table-head:rgba(71,59,50,.80);
+ --shadow:0 16px 40px rgba(0,0,0,.18),0 2px 9px rgba(0,0,0,.10);
+}
+html{scroll-behavior:smooth}
+body{position:relative;isolation:isolate;min-height:100vh;background:var(--page);line-height:1.6}
+/* Les halos sont purement décoratifs, sans interaction et sans images externes. */
+body::before{content:"";position:fixed;z-index:-1;inset:-20%;pointer-events:none;
+ background:radial-gradient(ellipse 34% 30% at 12% 20%,rgba(214,178,139,.31),transparent 75%),
+ radial-gradient(ellipse 32% 34% at 88% 34%,rgba(222,205,178,.32),transparent 76%),
+ radial-gradient(ellipse 30% 36% at 50% 88%,rgba(195,165,143,.21),transparent 77%);
+ animation:popote-ambient-drift 48s ease-in-out infinite alternate;will-change:transform}
+:root[data-theme="dark"] body::before{background:radial-gradient(ellipse 34% 30% at 12% 20%,rgba(132,94,73,.22),transparent 75%),radial-gradient(ellipse 32% 34% at 88% 34%,rgba(145,112,88,.16),transparent 76%),radial-gradient(ellipse 30% 36% at 50% 88%,rgba(107,83,74,.18),transparent 77%)}
+@keyframes popote-ambient-drift{0%{transform:translate3d(-1.5%,0,0) scale(1)}50%{transform:translate3d(2%,1.5%,0) scale(1.035)}100%{transform:translate3d(-1%,3%,0) scale(1.01)}}
+main{max-width:1500px;padding:clamp(18px,3vw,40px) clamp(14px,3vw,34px) 50px}
+header{padding-top:clamp(26px,4vw,46px);padding-bottom:clamp(26px,4vw,46px);background:linear-gradient(115deg,#51463e,#706052);border-bottom:1px solid rgba(255,255,255,.22)}
+header h1{letter-spacing:-.035em}header p{opacity:.9}
+.cash-hero{border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:clamp(25px,3.5vw,43px);background:linear-gradient(115deg,rgba(94,77,65,.96),rgba(124,103,84,.9));box-shadow:0 18px 42px rgba(76,53,37,.14)}
+.panel,.cards article{background:var(--surface);border:1px solid var(--border);border-radius:21px;box-shadow:var(--shadow);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+.panel{padding:clamp(19px,2.4vw,34px);margin-bottom:clamp(18px,2.4vw,30px)}
+.cards{gap:clamp(12px,1.6vw,22px);margin-bottom:clamp(18px,2.4vw,30px)}
+.cards article{padding:clamp(17px,2vw,26px);gap:12px}
+.sectionhead{gap:18px;margin-bottom:22px}.sectionhead h2{font-size:clamp(19px,2vw,24px);letter-spacing:-.025em}
+.sectionhead p,.hint{line-height:1.7}
+input,select{background:rgba(255,255,255,.66);border:1px solid var(--border);border-radius:12px;padding:12px 13px;min-height:45px}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select{background:rgba(36,31,28,.75)}
+button{border-radius:12px;min-height:42px;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+button:not(:disabled):active{transform:scale(.985)}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.muted{background:var(--surface-alt)}
+.quick-nav{gap:10px;flex-wrap:wrap}.quick-nav a{border-radius:13px}
+.scroll{border-radius:14px}thead th,tfoot th{background:var(--table-head)}th,td{padding:12px 11px}
+.archive-item,.expense-item{padding-top:17px;padding-bottom:17px}
+.courses-panel{padding:clamp(19px,2.4vw,34px)!important}
+.courses-panel .courses-layout{gap:clamp(14px,2vw,25px)}
+.courses-panel .courses-column{background:rgba(255,255,255,.34);border:1px solid var(--border);border-radius:19px;padding:clamp(16px,2vw,25px);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.courses-panel .courses-current-column{background:var(--surface-alt)}
+.courses-panel .courses-product-tile{border-radius:13px;background:var(--surface);box-shadow:0 3px 12px rgba(75,55,38,.055)}
+.courses-panel .courses-item{background:var(--surface);border-radius:14px}
+.courses-panel .courses-manage{border-radius:14px}
+@media(max-width:700px){
+ main{padding:16px 12px 30px}.panel{padding:18px 15px;border-radius:18px;margin-bottom:18px}
+ .cash-hero{border-radius:19px;padding:24px 20px}
+ .cards{gap:11px}.cards article{padding:16px 13px;border-radius:17px}
+ .personnel-mobile .pm-panel{background:rgba(255,255,255,.37);border-radius:19px;padding:18px 15px;gap:16px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+ .personnel-mobile .pm-totals{background:var(--surface-alt);border-radius:15px}
+ .personnel-mobile .pm-nav{gap:12px}.personnel-mobile .pm-nav button{min-height:50px}
+ .courses-panel{padding:18px 15px!important}.courses-panel .courses-column{padding:15px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}body::before{animation:none;will-change:auto}button{transition:none}button:not(:disabled):active{transform:none}}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+ .panel,.cards article{background:#fffaf3}
+ :root[data-theme="dark"] .panel,:root[data-theme="dark"] .cards article{background:#302924}
+}
