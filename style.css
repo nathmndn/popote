@@ -201,6 +201,26 @@ html{scroll-behavior:smooth;scroll-padding-top:20px}body{font-family:Inter,ui-sa
 @media(max-width:1080px){.courses-panel .courses-layout{grid-template-columns:1fr}}
 @media(max-width:700px){.courses-panel{padding:15px!important}.courses-panel .courses-column{padding:14px}.courses-panel .courses-product-grid{gap:8px}.courses-panel .courses-product-tile{min-height:49px;padding:12px 15px;font-size:14px}.courses-panel .courses-item{flex-wrap:nowrap}.courses-panel .courses-item-actions{gap:5px}.courses-panel .courses-mark-bought,.courses-panel .courses-undo{min-height:44px;padding:8px 10px}.courses-panel .courses-remove{min-width:36px;min-height:44px}.courses-panel .courses-add-form{grid-template-columns:1fr}}
 
-/* Retour visible sous le formulaire d'ajout */
-.courses-panel .courses-form-feedback{grid-column:1/-1;display:block;margin:3px 0 0;padding:10px 12px;border-radius:9px;background:var(--surface-alt);color:var(--text);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
-.courses-panel #coursesAddProduct button:disabled{opacity:.65;cursor:wait}
+/* V10 : fiche individuelle sur petit écran, tableau inchangé sur ordinateur */
+.personnel-mobile{display:none}
+@media(max-width:700px){
+ .personnel-mobile{display:block;margin:14px 0 20px}
+ #personnels .personnel-scroll{display:none!important}
+ .personnel-mobile .pm-panel{padding:16px;border:1px solid var(--border);border-radius:15px;background:var(--surface);display:grid;gap:14px}
+ .personnel-mobile .pm-heading{font-size:17px;font-weight:800;margin:0}
+ .personnel-mobile .pm-field{display:grid;gap:7px}
+ .personnel-mobile .pm-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+ .personnel-mobile .pm-row span{font-size:14px;color:var(--muted-text)}
+ .personnel-mobile .pm-row strong{font-size:16px;text-align:right}
+ .personnel-mobile .pm-row input[type=checkbox]{width:24px;height:24px;min-height:24px;accent-color:var(--taupe)}
+ .personnel-mobile .pm-row input[type=number]{max-width:135px;text-align:right}
+ .personnel-mobile .pm-stepper{display:flex;align-items:center;gap:8px}
+ .personnel-mobile .pm-stepper button{min-width:44px;min-height:44px;padding:8px}
+ .personnel-mobile .pm-stepper input{max-width:75px;text-align:center}
+ .personnel-mobile .pm-totals{padding:13px;border-radius:12px;background:var(--surface-alt)}
+ .personnel-mobile .pm-totals .pm-row:last-child{border-bottom:0}
+ .personnel-mobile .pm-nav{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ .personnel-mobile .pm-nav button{min-height:48px}
+ .personnel-mobile .pm-remove{width:100%;margin-top:2px}
+ .personnel-mobile .pm-counter{text-align:center;color:var(--muted-text);font-size:12px}
+}
